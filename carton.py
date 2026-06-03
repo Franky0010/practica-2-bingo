@@ -1,63 +1,76 @@
+"""
+Carton: clase base del cartón de Bingo.
+Relación con CartónDoble: herencia (CartónDoble ES UN Carton).
+"""
+
 import random
 
 
 class Carton:
-    """
-    Representa un cartón de bingo estándar.
+    """Cartón de Bingo con 5 columnas de 5 números según la palabra y el rango configurado."""
 
-    Responsabilidad:
-    - Generar una grilla de números según una palabra de 5 letras.
-    - Permitir marcar números y verificar si tiene bingo.
+    def __init__(self, palabra: str = "BINGO", max_num: int = 90) -> None:
+        if len(palabra) != 5 or len(set(palabra)) != 5:
+            raise ValueError("La palabra debe tener exactamente 5 letras sin repetir.")
+        if not (50 <= max_num <= 90) or max_num % 5 != 0:
+            raise ValueError("El máximo debe ser múltiplo de 5 entre 50 y 90.")
 
-    Relación:
-    - Es clase base de CartonDoble (herencia).
-    - Puede ser asociado a un Jugador (agregación).
-    """
-
-    def __init__(self, palabra: str = "BINGO", maximo: int = 90) -> None:
-        self.palabra: str = palabra.upper()
-        self.maximo: int = maximo
-        self.grilla: dict[str, list[int]] = {}
-        self.marcados: set[int] = set()
-
-        self._validar_parametros()
+        self._palabra: str = palabra.upper()
+        self._max_num: int = max_num
+        self._grilla: dict[str, list[int]] = {}
+        self._marcados: set[int] = set()
         self._generar_grilla()
 
-    def _validar_parametros(self) -> None:
-        """Valida que la palabra y el rango sean correctos."""
-        if len(self.palabra) != 5:
-            raise ValueError("La palabra debe tener 5 letras")
-
-        if len(set(self.palabra)) != 5:
-            raise ValueError("No se permiten letras repetidas")
-
-        if self.maximo < 50 or self.maximo > 90 or self.maximo % 5 != 0:
-            raise ValueError("El máximo debe ser múltiplo de 5 entre 50 y 90")
+    def _dominios(self) -> list[list[int]]:
+        paso = self._max_num // 5
+        return [
+            list(range(i * paso + 1, (i + 1) * paso + 1))
+            for i in range(5)
+        ]
 
     def _generar_grilla(self) -> None:
-        """Genera los números del cartón distribuidos por columnas."""
-        cantidad = self.maximo // 5
-        inicio = 1
+        for i, letra in enumerate(self._palabra):
+            self._grilla[letra] = sorted(random.sample(self._dominios()[i], 5))
 
-        for letra in self.palabra:
-            fin = inicio + cantidad
-            self.grilla[letra] = sorted(random.sample(range(inicio, fin), 5))
-            inicio = fin
-
-    def marcar_numero(self, numero: int) -> bool:
-        """Marca un número si existe en el cartón."""
-        for numeros in self.grilla.values():
-            if numero in numeros:
-                self.marcados.add(numero)
+    def marcar(self, numero: int) -> bool:
+        """Marca el número si existe en el cartón. Retorna True si fue marcado."""
+        for nums in self._grilla.values():
+            if numero in nums:
+                self._marcados.add(numero)
                 return True
         return False
 
     def tiene_bingo(self) -> bool:
-        """Verifica si todos los números del cartón han sido marcados."""
-        numeros = {n for col in self.grilla.values() for n in col}
-        return numeros.issubset(self.marcados)
+        """Bingo cuando alguna columna queda completamente marcada."""
+        return any(
+            all(n in self._marcados for n in nums)
+            for nums in self._grilla.values()
+        )
 
-    def mostrar(self) -> None:
-        """Imprime el cartón en consola."""
-        for letra, numeros in self.grilla.items():
-            print(f"{letra}: {numeros}")
+    def progreso(self) -> float:
+        """Fracción de números marcados sobre el total (0.0–1.0)."""
+        marcados = sum(1 for nums in self._grilla.values() for n in nums if n in self._marcados)
+        return marcados / 25
+
+    def total_marcados(self) -> int:
+        return sum(1 for nums in self._grilla.values() for n in nums if n in self._marcados)
+
+    def mostrar(self) -> str:
+        encabezado = "  ".join(f"{l:^4}" for l in self._palabra)
+        lineas = [encabezado, "-" * len(encabezado)]
+        for fila in range(5):
+            row = []
+            for letra in self._palabra:
+                n = self._grilla[letra][fila]
+                marca = "*" if n in self._marcados else " "
+                row.append(f"{n:>2}{marca} ")
+            lineas.append(" ".join(row))
+        return "\n".join(lineas)
+
+    @property
+    def palabra(self) -> str:
+        return self._palabra
+
+    @property
+    def max_num(self) -> int:
+        return self._max_num

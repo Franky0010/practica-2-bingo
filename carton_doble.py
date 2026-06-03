@@ -1,64 +1,66 @@
+"""
+CartónDoble: extiende Carton con dos grillas independientes.
+Relación con Carton: herencia (CartónDoble ES UN Carton, no duplica lógica).
+"""
+
+import random
 from carton import Carton
 
 
 class CartonDoble(Carton):
-    """
-    Representa un cartón doble (dos grillas independientes).
+    """Cartón con dos grillas generadas con los mismos parámetros. Gana si completa cualquiera."""
 
-    Responsabilidad:
-    - Mantener dos cartones en uno solo.
-    - Permitir ganar si cualquiera de las dos grillas completa bingo.
+    def __init__(self, palabra: str = "BINGO", max_num: int = 90) -> None:
+        super().__init__(palabra, max_num)
+        self._grilla2: dict[str, list[int]] = {}
+        self._marcados2: set[int] = set()
+        self._generar_grilla2()
 
-    Relación:
-    - Hereda de Carton.
-    """
+    def _generar_grilla2(self) -> None:
+        paso = self._max_num // 5
+        for i, letra in enumerate(self._palabra):
+            dominio = list(range(i * paso + 1, (i + 1) * paso + 1))
+            self._grilla2[letra] = sorted(random.sample(dominio, 5))
 
-    def __init__(self, palabra: str = "BINGO", maximo: int = 90) -> None:
-        super().__init__(palabra, maximo)
-
-        self.grilla_1 = self.grilla
-        self.marcados_1 = self.marcados
-
-        self.grilla = {}
-        self.marcados = set()
-        self._generar_grilla()
-
-        self.grilla_2 = self.grilla
-        self.marcados_2 = self.marcados
-
-    def marcar_numero(self, numero: int) -> bool:
-        """Marca el número en ambas grillas."""
-        marcado = False
-
-        for numeros in self.grilla_1.values():
-            if numero in numeros:
-                self.marcados_1.add(numero)
-                marcado = True
-
-        for numeros in self.grilla_2.values():
-            if numero in numeros:
-                self.marcados_2.add(numero)
-                marcado = True
-
-        return marcado
+    def marcar(self, numero: int) -> bool:
+        """Marca el número en ambas grillas si aparece. Retorna True si fue marcado en alguna."""
+        marcado1 = super().marcar(numero)
+        marcado2 = False
+        for nums in self._grilla2.values():
+            if numero in nums:
+                self._marcados2.add(numero)
+                marcado2 = True
+                break
+        return marcado1 or marcado2
 
     def tiene_bingo(self) -> bool:
-        """Verifica si alguna de las dos grillas tiene bingo."""
-        return self._check(self.grilla_1, self.marcados_1) or self._check(
-            self.grilla_2, self.marcados_2
+        """Retorna True si alguna de las dos grillas tiene una columna completa."""
+        bingo_grilla1 = super().tiene_bingo()
+        bingo_grilla2 = any(
+            all(n in self._marcados2 for n in nums)
+            for nums in self._grilla2.values()
         )
+        return bingo_grilla1 or bingo_grilla2
 
-    def _check(self, grilla, marcados) -> bool:
-        numeros = {n for col in grilla.values() for n in col}
-        return numeros.issubset(marcados)
+    def grilla_mas_cercana(self) -> int:
+        """Indica qué grilla (1 o 2) está más cerca de completarse."""
+        prog1 = self.progreso()
+        marcados2 = sum(1 for nums in self._grilla2.values() for n in nums if n in self._marcados2)
+        prog2 = marcados2 / 25
+        return 1 if prog1 >= prog2 else 2
 
-    def grilla_mas_cercana(self) -> str:
-        """Indica cuál grilla está más cerca de completar bingo."""
-        f1 = 25 - len(self.marcados_1)
-        f2 = 25 - len(self.marcados_2)
+    def mostrar(self) -> str:
+        g2_lineas = self._mostrar_grilla2()
+        return f"[Grilla 1]\n{super().mostrar()}\n[Grilla 2]\n{g2_lineas}"
 
-        if f1 < f2:
-            return "Grilla 1"
-        elif f2 < f1:
-            return "Grilla 2"
-        return "Empate"
+    def _mostrar_grilla2(self) -> str:
+        encabezado = "  ".join(f"{l:^4}" for l in self._palabra)
+        lineas = [encabezado, "-" * len(encabezado)]
+        for fila in range(5):
+            row = []
+            for letra in self._palabra:
+                n = self._grilla2[letra][fila]
+                marca = "*" if n in self._marcados2 else " "
+                row.append(f"{n:>2}{marca} ")
+            lineas.append(" ".join(row))
+        return "\n".join(lineas)

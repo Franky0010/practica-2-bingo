@@ -1,33 +1,37 @@
+"""
+Bombo: mecanismo de extracción de números.
+Relación con Juego: composición (el Bombo no existe fuera del Juego).
+"""
+
 import random
 
 
 class Bombo:
-    """
-    Representa el bombo de bingo.
+    """Extrae números aleatorios sin repetición y registra el historial de la partida."""
 
-    Responsabilidad:
-    - Extraer números aleatorios sin repetición.
-    - Mantener historial de números extraídos.
+    def __init__(self, max_num: int = 90) -> None:
+        if not (50 <= max_num <= 90) or max_num % 5 != 0:
+            raise ValueError("El máximo debe ser múltiplo de 5 entre 50 y 90.")
+        self._max_num: int = max_num
+        self._disponibles: list[int] = list(range(1, max_num + 1))
+        self._historial: list[int] = []
 
-    Relación:
-    - Es parte del Juego (composición).
-    """
-
-    def __init__(self, maximo: int = 90) -> None:
-        self.disponibles: list[int] = list(range(1, maximo + 1))
-        self.historial: list[int] = []
-
-    def extraer_numero(self) -> int:
-        """Extrae un número aleatorio del bombo."""
-        if not self.disponibles:
-            raise RuntimeError("No quedan números")
-
-        numero = random.choice(self.disponibles)
-        self.disponibles.remove(numero)
-        self.historial.append(numero)
-
+    def extraer(self) -> int:
+        """Extrae y retorna un número aleatorio de los disponibles."""
+        if not self._disponibles:
+            raise RuntimeError("El bombo está vacío; no quedan números por extraer.")
+        numero = random.choice(self._disponibles)
+        self._disponibles.remove(numero)
+        self._historial.append(numero)
         return numero
 
-    def quedan_numeros(self) -> bool:
-        """Indica si aún quedan números por extraer."""
-        return len(self.disponibles) > 0
+    def tiene_numeros(self) -> bool:
+        return len(self._disponibles) > 0
+
+    @property
+    def historial(self) -> list[int]:
+        return list(self._historial)
+
+    @property
+    def max_num(self) -> int:
+        return self._max_num

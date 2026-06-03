@@ -1,140 +1,63 @@
-# Sistema de Juego de Bingo
+# Práctica 2 – Sistema de Juego de Bingo
+**Juan Manuel Castaño Gutiérrez — Franky Julian Marrin Vinasco**
 
-## Descripción
-
-Este proyecto implementa un sistema completo de Bingo utilizando Programación Orientada a Objetos en Python.
-
-El sistema modela los elementos principales del juego como clases independientes que interactúan entre sí, permitiendo simular una partida completa de bingo desde consola.
-
-Se incluyen:
-
-* Cartones de juego
-* Jugadores
-* Bombo (extracción de números)
-* Juego (control de la partida)
-
-Además, se implementa un tipo especial de cartón llamado **CartonDoble**, que contiene dos grillas independientes y permite ganar con cualquiera de ellas.
-
----
-
-## Cómo ejecutar el proyecto
-
-1. Tener instalado Python 3.11 o superior.
-2. Descargar o clonar el repositorio.
-3. Abrir la terminal en la carpeta del proyecto.
-4. Ejecutar el siguiente comando:
+## Ejecución
 
 ```bash
+cd practica2
 python main.py
 ```
 
----
+Requiere Python 3.11 o superior. No se usan librerías externas.
 
 ## Estructura del proyecto
 
 ```
-Bingo/
-├── carton.py
-├── carton_doble.py
-├── bombo.py
-├── jugador.py
-├── juego.py
-├── main.py
-└── README.md
+practica2/
+├── carton.py        # Clase base Carton
+├── carton_doble.py  # CartónDoble (hereda de Carton)
+├── bombo.py         # Bombo (composición con Juego)
+├── jugador.py       # Jugador (asociación con Carton)
+├── juego.py         # Juego (director de la partida)
+└── main.py          # Demostración ejecutable
 ```
-
----
 
 ## Clases implementadas
 
-###  Carton
+### Carton (`carton.py`)
+- **Atributos:** `_palabra`, `_max_num`, `_grilla`, `_marcados`
+- **Métodos:** `marcar()`, `tiene_bingo()`, `progreso()`, `total_marcados()`, `mostrar()`
 
-* Representa un cartón de bingo estándar.
-* Genera una grilla de números basada en una palabra de 5 letras.
-* Permite marcar números y verificar si se ha completado el bingo.
+### CartónDoble (`carton_doble.py`)
+- **Atributos heredados** + `_grilla2`, `_marcados2`
+- **Métodos sobrescritos:** `marcar()`, `tiene_bingo()`
+- **Métodos propios:** `grilla_mas_cercana()`, `_mostrar_grilla2()`
 
-###  CartonDoble
+### Bombo (`bombo.py`)
+- **Atributos:** `_max_num`, `_disponibles`, `_historial`
+- **Métodos:** `extraer()`, `tiene_numeros()`
 
-* Hereda de `Carton`.
-* Contiene dos grillas independientes.
-* Permite ganar si cualquiera de las dos grillas completa el bingo.
-* Permite identificar cuál grilla está más cerca de completarse.
+### Jugador (`jugador.py`)
+- **Atributos:** `_nombre`, `_cartones`, `_total_marcados`
+- **Métodos:** `agregar_carton()`, `retirar_carton()`, `marcar_numero()`, `tiene_bingo()`
 
-###  Bombo
+### Juego (`juego.py`)
+- **Atributos:** `_palabra`, `_max_num`, `_bombo`, `_jugadores`, `_ganadores`
+- **Métodos:** `registrar_jugador()`, `dar_baja_jugador()`, `ejecutar_turno()`, `hay_ganador()`, `reporte_final()`
 
-* Encargado de extraer números aleatorios sin repetición.
-* Mantiene un historial de los números extraídos.
-* Simula el comportamiento real del bombo en un juego de bingo.
+## Justificación de relaciones entre clases
 
-###  Jugador
+**Carton ↔ CartónDoble — Herencia**
+CartónDoble es un tipo especial de Carton: reutiliza toda su lógica de generación de grilla y marcado, y solo añade una segunda grilla independiente. La relación "es-un" justifica la herencia: CartónDoble no duplica código, sino que extiende el comportamiento con `tiene_bingo()` y `grilla_mas_cercana()`.
 
-* Representa un participante del juego.
-* Puede tener uno o más cartones.
-* Marca números a medida que se extraen.
-* Verifica si ha ganado el juego.
+**Juego ↔ Bombo — Composición**
+El Bombo no tiene sentido fuera de una partida: se instancia dentro del constructor de Juego y su ciclo de vida está totalmente ligado al del Juego. Si la partida termina (el objeto Juego deja de existir), el Bombo también desaparece. El mecanismo que establece esta relación es la instanciación directa en `__init__`: `self._bombo = Bombo(max_num)`.
 
-###  Juego
+**Jugador ↔ Cartón(es) — Asociación**
+Los cartones se generan externamente y se asignan a los jugadores mediante `agregar_carton()`. Un cartón puede existir sin estar asignado a ningún jugador, y si un jugador abandona la partida, sus cartones no desaparecen. El mecanismo es una lista de referencias: `self._cartones: list[Carton]`.
 
-* Coordina toda la partida de bingo.
-* Controla los turnos del juego.
-* Notifica a los jugadores cada número extraído.
-* Determina el ganador de la partida.
-* Genera un reporte final del juego.
-
----
-
-##  Relaciones entre clases
-
-### Carton → CartonDoble (Herencia)
-
-CartonDoble es una extensión de la clase Carton, lo que permite reutilizar la lógica existente y añadir nuevas funcionalidades sin duplicar código.
-
-### Juego → Bombo (Composición)
-
-El Bombo es creado dentro de la clase Juego y su ciclo de vida depende completamente del mismo. Si el juego termina, el bombo deja de existir.
-
-### Jugador → Carton (Agregación)
-
-Los cartones pueden existir independientemente del jugador. Un jugador puede agregar o retirar cartones sin que estos desaparezcan.
-
-### Juego → Jugador (Asociación)
-
-El juego mantiene una referencia a los jugadores registrados, pero no los crea ni los destruye. Los jugadores pueden unirse o retirarse del juego.
-
----
-
-##  Tecnologías utilizadas
-
-* Python 3.11
-* Biblioteca estándar de Python (sin uso de librerías externas)
-
----
-
-##  Consideraciones técnicas
-
-* No se utilizan variables globales.
-* Se siguen las convenciones de estilo PEP 8.
-* Se utilizan type hints en todas las clases.
-* Se implementa manejo básico de excepciones.
-* El programa se ejecuta correctamente desde la línea de comandos.
-
----
-
-##  Ejecución del sistema
-
-El archivo `main.py` actúa como script de demostración:
-
-* Crea un juego
-* Registra al menos tres jugadores
-* Asigna cartones (incluyendo un CartonDoble)
-* Ejecuta la partida turno a turno
-* Muestra en consola:
-
-  * Número extraído en cada turno
-  * Jugadores que marcan el número
-  * Ganador final
-
----
+**Juego ↔ Jugador(es) — Asociación**
+El Juego no crea ni destruye jugadores: simplemente los referencia. Los jugadores se registran voluntariamente con `registrar_jugador()` y pueden darse de baja en cualquier momento. El mecanismo es una lista de referencias: `self._jugadores: list[Jugador]`.
 
 ##  Autor(es)
 
